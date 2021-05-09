@@ -1,4 +1,5 @@
 set (SOURCES
+    IPGlasma.cpp
     Fragmentation.cpp
     FFT.cpp
     Matrix.cpp
