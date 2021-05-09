@@ -15,7 +15,7 @@ class IPGlasma {
     int size_;
     int nev_;
 
-    int h5Flag_;
+    bool h5Flag_;
 
     Parameters *param;
     Random* random;
@@ -25,9 +25,15 @@ class IPGlasma {
     IPGlasma(int rank, int size, int nev, std::string inputFilename);
     ~IPGlasma();
 
+    bool get_h5Flag() const {return(h5Flag_);}
+
     void readInput(Setup *setup, std::string inputFilename);
 
     void generateAnEvent(int iev);
+
+    void display_logo();
+
+    void writeparams();
 
 };
 

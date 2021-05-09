@@ -6,10 +6,13 @@
 #include "Lattice.h"
 #include "Init.h"
 
-
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -18,6 +21,7 @@ IPGlasma::IPGlasma(int rank, int size, int nev, std::string inputFilename) {
     rank_ = rank;
     size_ = size;
     nev_ = nev;
+    h5Flag_ = false;
 
     param = new Parameters();
     param->setMPIRank(rank);
@@ -89,14 +93,14 @@ void IPGlasma::generateAnEvent(int iev) {
     messager.flush("info");
 
     // welcome
-    //if (rank_ == 0)
-    //    display_logo();
+    if (rank_ == 0)
+        display_logo();
 
     // initialize helper class objects
     param->setEventId(rank_ + iev * size_);
     param->setSuccess(0);
 
-    //writeparams(param);
+    writeparams();
 
     int nn[2];
     nn[0] = param->getSize();
@@ -299,6 +303,20 @@ void IPGlasma::generateAnEvent(int iev) {
         // using parmeters in param
         evolution.run(&lat, &bufferlat, &group, param);
     }
+    if (param->getWriteOutputsToHDF5() == 1) {
+      int status = 0;
+      std::stringstream h5output_filename;
+      h5output_filename << "RESULTS_rank" << rank_;
+      std::stringstream collect_command;
+      collect_command << "python3 utilities/combine_events_into_hdf5.py ."
+                      << " --output_filename " << h5output_filename.str()
+                      << " --event_id " << param->getEventId();
+      status = system(collect_command.str().c_str());
+      messager << "finished system call to python script with status: "
+               << status;
+      messager.flush("info");
+      h5Flag_ = true;
+    }
     messager.info("One event finished");
 }
 
@@ -386,4 +404,97 @@ void IPGlasma::readInput(Setup *setup, std::string inputFilename) {
     param->setMinimumQs2ST(setup->IFind(file_name, "minimumQs2ST"));
     if (rank_ == 0)
         cout << "done." << endl;
+}
+
+
+void IPGlasma::display_logo() {
+  cout << endl;
+  cout << "--------------------------------------------------------------------"
+          "---------"
+       << endl;
+  cout << "| Classical Yang-Mills evolution with IP-Glasma initial "
+          "configurations v1.4 |"
+       << endl;
+  cout << "--------------------------------------------------------------------"
+          "---------"
+       << endl;
+  cout << "| References:                                                       "
+          "        |"
+       << endl;
+  cout << "| B. Schenke, P. Tribedy, R. Venugopalan                            "
+          "        |"
+       << endl;
+  cout << "| Phys. Rev. Lett. 108, 252301 (2012) and Phys. Rev. C86, 034908 "
+          "(2012)     |"
+       << endl;
+  cout << "--------------------------------------------------------------------"
+          "---------"
+       << endl;
+
+  cout << "This version uses Qs as obtained from IP-Sat using the sum over "
+          "proton T_p(b)"
+       << endl;
+  cout << "This is a simple MPI version that runs many events in one job. No "
+          "communication."
+       << endl;
+
+  cout << "Run using large lattices to improve convergence of the root finder "
+          "in initial condition. "
+       << "Recommended: 600x600 using L=30fm" << endl;
+  cout << endl;
+}
+
+
+void IPGlasma::writeparams() {
+  // write the used parameters into file "usedParameters.dat" as a double check
+  // for later
+  time_t rawtime = time(0);
+  stringstream strup_name;
+  strup_name << "usedParameters" << param->getEventId() << ".dat";
+  string up_name;
+  up_name = strup_name.str();
+
+  fstream fout1(up_name.c_str(), ios::out);
+  char *timestring = ctime(&rawtime);
+  fout1 << "File created on " << timestring << endl;
+  fout1 << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << endl;
+  fout1 << "Used parameters by IP-Glasma v1.3" << endl;
+  fout1 << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << endl;
+  fout1 << " " << endl;
+  fout1 << " Output by readInput in main.cpp: " << endl;
+  fout1 << " " << endl;
+  fout1 << "Program run in mode " << param->getMode() << endl;
+  fout1 << "Nc " << param->getNc() << endl;
+  fout1 << "size " << param->getSize() << endl;
+  fout1 << "lattice spacing a "
+        << param->getL() / static_cast<double>(param->getSize()) << " fm "
+        << endl;
+  fout1 << "Ny " << param->getNy() << endl;
+  fout1 << "Projectile " << param->getProjectile() << endl;
+  fout1 << "Target " << param->getTarget() << endl;
+  if (param->getUseConstituentQuarkProton() > 0) {
+    fout1 << "Nucleons consists of " << param->getUseConstituentQuarkProton()
+          << " constituent quarks" << endl;
+    if (param->getShiftConstituentQuarkProtonOrigin())
+      fout1 << "... constituent quark center of mass moved to origin" << endl;
+  }
+  fout1 << "Smooth nucleus " << param->getUseSmoothNucleus() << endl;
+  fout1 << "Gaussian wounding " << param->getGaussianWounding() << endl;
+  fout1 << "Using fluctuating x=Qs/root(s) " << param->getUseFluctuatingx()
+        << endl;
+  if (param->getRunWithkt() == 0)
+    fout1 << "Using local Qs to run " << param->getRunWithLocalQs() << endl;
+  else
+    fout1 << "running alpha_s with k_T" << endl;
+  fout1 << "QsmuRatio " << param->getQsmuRatio() << endl;
+  fout1 << "smeared mu " << param->getSmearQs() << endl;
+  fout1 << "m " << param->getm() << endl;
+  fout1 << "rmax " << param->getRmax() << endl;
+  fout1 << "UVdamp " << param->getUVdamp() << endl;
+  fout1 << "beta2 " << param->getbeta2() << endl;
+  if (param->getSmearQs() == 1) {
+    fout1 << "smearing width " << param->getSmearingWidth() << endl;
+  }
+  fout1 << "Using fat tailed distribution " << param->getUseFatTails() << endl;
+  fout1.close();
 }
