@@ -35,6 +35,14 @@ class IPGlasma {
 
     void writeparams();
 
+    int getGridSizeX() const {return(param->getSizeOutput());}
+
+    double getGridSpacingX() const {
+        double hL = param->getLOutput();
+        double ha = hL/static_cast<double>(param->getSizeOutput());
+        return(ha);
+    }
+
 };
 
 
