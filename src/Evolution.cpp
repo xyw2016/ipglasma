@@ -453,10 +453,12 @@ void Evolution::run(Lattice *lat, BufferLattice *bufferlat, Group *group,
       u(lat, param, it);
     }
 
-    if (it % 10 == 0)
+    if (it % 10 == 0) {
       cout << endl
-           << "Evolving to time " << it * a * dtau << " fm/c" << endl
+           << "Evolving to time " << setprecision(3)
+           << it * a * dtau << " fm/c" << endl
            << endl;
+    }
     // evolve from time tau-dtau/2 to tau+dtau/2
     if (it < itmax) {
       evolvePi(lat, bufferlat, param, dtau,
