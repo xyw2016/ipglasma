@@ -1456,7 +1456,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
       double p;
       double G = 0.92;
       double ran;
-
+      std::vector<double> ran_record;
       for (int i = 0; i < A1; i++) {
         for (int j = 0; j < A2; j++) {
           dx = nucleusB_.at(j).x - nucleusA_.at(i).x;
@@ -1466,7 +1466,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
           p = G * exp(-G * dij / d2); // Gaussian profile
 
           ran = random->genrand64_real1();
-
+          ran_record.push_back(ran);
           if (ran < p) {
             foutNcoll << (nucleusB_.at(j).x + nucleusA_.at(i).x) / 2. << " "
                       << (nucleusB_.at(j).y + nucleusA_.at(i).y) / 2. << endl;
@@ -1476,6 +1476,31 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
           }
         }
       }
+      // Output the Ncoll with different impact parameters, Bmag
+      double Bmin = 0.0;   // fm
+      double Bmax = 100.0; // fm
+      std::ofstream outputFile("B_Ncoll.txt"); // Open the output file
+      for (int iB = 0; iB < 2001; iB++) {
+          double xb_temp = random->genrand64_real1(); // uniformly distributed random variable
+          double Bmag = sqrt((Bmax * Bmax - Bmin * Bmin) * xb_temp + Bmin * Bmin);
+          int iran = 0;
+          int Ncoll_Bmag = 0;
+          for (int i = 0; i < A1; i++) {
+            for (int j = 0; j < A2; j++) {
+              dx = nucleusB_.at(j).x - nucleusA_.at(i).x + Bmag;
+              dy = nucleusB_.at(j).y - nucleusA_.at(i).y;
+              dij = dx * dx + dy * dy;
+              p = G * exp(-G * dij / d2); // Gaussian profile
+              if (ran_record[iran] < p) {
+                Ncoll_Bmag++;
+              }
+              iran++;
+            }
+          }
+          outputFile << Bmag << "  " << Ncoll_Bmag << "\n";
+      }
+      outputFile.close(); 
+      // End of output 
     }
 
     foutNcoll.close();
