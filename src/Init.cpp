@@ -1479,7 +1479,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
       // Output the Ncoll with different impact parameters, Bmag
       double Bmin = 0.0;   // fm
       double Bmax = 100.0; // fm
-      std::ofstream outputFile("B_Ncoll.txt"); // Open the output file
+      std::ofstream outputFile("B_Ncoll.dat"); // Open the output file
       for (int iB = 0; iB < 2001; iB++) {
           double xb_temp = random->genrand64_real1(); // uniformly distributed random variable
           double Bmag = sqrt((Bmax * Bmax - Bmin * Bmin) * xb_temp + Bmin * Bmin);
