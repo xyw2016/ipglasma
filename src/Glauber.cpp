@@ -86,6 +86,17 @@ void Glauber::FindNucleusData2(Nucleus *nucleus, string name,
     nucleus->beta3 = 0.;
     nucleus->beta4 = -0.122; // from arXiv:1508.06294
     nucleus->gamma = 0.;
+  } else if (name.compare("Ne") == 0) {
+    nucleus->A = 20;
+    nucleus->Z = 10;
+    densityFunction = "readFromFile";
+    nucleus->R_WS = 2.72428;
+    nucleus->w_WS = -0.051;
+    nucleus->a_WS = 0.498243;
+    nucleus->beta2 = 0.489885;  // from arXiv:1508.06294
+    nucleus->beta3 = 0.215998;
+    nucleus->beta4 = 0.305473; // from arXiv:1508.06294
+    nucleus->gamma = 0.;
   } else if (name.compare("S") == 0) {
     nucleus->A = 32;
     nucleus->Z = 16;
@@ -97,6 +108,17 @@ void Glauber::FindNucleusData2(Nucleus *nucleus, string name,
     nucleus->beta3 = 0.;
     nucleus->beta4 = 0.0;
     nucleus->gamma = 0.;
+  } else if (name.compare("Ar") == 0) {
+    nucleus->A = 40;
+    nucleus->Z = 18;
+    densityFunction = "readFromFile";
+    nucleus->R_WS = 3.61074;
+    nucleus->w_WS = 0.16;
+    nucleus->a_WS = 0.516211;
+    nucleus->beta2 = 0.166807;
+    nucleus->beta3 = 0.;
+    nucleus->beta4 = 0.00695193;
+    nucleus->gamma = 0.474393;
   } else if (name.compare("W") == 0) {
     nucleus->A = 184;
     nucleus->Z = 74;
