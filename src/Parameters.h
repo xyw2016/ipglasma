@@ -15,6 +15,7 @@ private:
   std::vector<std::vector<float>> posteriorParamSetsNq3_;
   // switches:
   int initMethod;
+  int initStage;
 
   double myPI;
   double myhbarc;
@@ -188,7 +189,7 @@ private:
   double beta2;        // value of deformation parameter beta2 to test sensitivity in Uranium
   double beta3, beta4, gamma_;
   double d_min_;
-  bool setWSDeformParams_, force_dmin_flag_;
+  bool setWSDeformParams_, force_dmin_flag_, runTwoStage_;
 
 public:
   // constructor:
@@ -379,6 +380,17 @@ public:
       force_dmin_flag_ = true;
   }
   bool getForceDmin() const { return (force_dmin_flag_); }
+  
+  void setrunTwoStage(int x) {
+    if (x == 0)
+      runTwoStage_ = false;
+    else
+      runTwoStage_ = true;
+  }
+  
+  bool runTwoStage() const { return (runTwoStage_); }
+  void setStage(int x) { initStage = x; }
+  int getStage() { return initStage; }
 
   // switches:
   void setInitMethod(int x) { initMethod = x; }

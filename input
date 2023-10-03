@@ -74,6 +74,8 @@ writeOutputs  0
 writeEvolution  0
 readInitialWilsonLines  0
 writeInitialWilsonLines  2
+runTwoStage 0
+WhichStage 1
 writeOutputsToHDF5  0
 force_dmin_flag  0
 d_min  0.9
