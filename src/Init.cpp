@@ -4,6 +4,9 @@
 #include "Phys_consts.h"
 #include <algorithm>
 #include <utility>
+#include <iostream>
+#include <fstream>
+#include <string>
 
 using namespace std;
 using PhysConst::hbarc;
@@ -3192,7 +3195,7 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
       string up_name;
       up_name = strup_name.str();
 
-      ofstream fout1(up_name.c_str(), ios::app);
+      ofstream fout1(up_name.c_str(), ios::out);
       fout1 << " " << endl;
       fout1 << "b = " << b << " fm" << endl;
       fout1 << "Npart = " << Npart << endl;
@@ -3575,7 +3578,39 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
   
   messager << "Reading Wilson lines from files " << VOne_name << " and " << VTwo_name;
   messager.flush("info");
-    
+  double bb;
+  // read in the shifted impact b in the first stage IP-Glasma
+  std::ifstream fin("usedParameters_only_impact_b.dat"); // Open the file for reading
+
+  if (!fin) {
+    std::cerr << "Error opening the file." << std::endl;
+    exit(1); // Exit with an error code
+  }
+
+  std::string line;
+  int Npart, Ncoll;
+  std::string coupling;
+
+  // Read data line by line
+  while (std::getline(fin, line)) {
+    // Parse each line to extract the relevant information
+    if (line.find("b =") != std::string::npos) {
+      // Extract 'b' value
+      sscanf(line.c_str(), "b = %lf fm", &bb);
+    } else if (line.find("Npart =") != std::string::npos) {
+      // Extract 'Npart' value
+      sscanf(line.c_str(), "Npart = %d", &Npart);
+    } else if (line.find("Ncoll =") != std::string::npos) {
+      // Extract 'Ncoll' value
+      sscanf(line.c_str(), "Ncoll = %d", &Ncoll);
+    } else if (line.find("using fixed coupling alpha_s=") != std::string::npos) {
+      // Extract 'coupling' value
+      sscanf(line.c_str(), "using fixed coupling alpha_s=%lf", &coupling);
+    }
+  }
+  // Close the file
+  fin.close();
+
   if (format == 1)
   {
     int N = param->getSize();
@@ -3621,7 +3656,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
         temp.set(2, 1, complex<double>(Re[7], Im[7]));
         temp.set(2, 2, complex<double>(Re[8], Im[8]));
 
-        double bb = param->getb();
+        //double bb = param->getb();
         a = L/static_cast<double>(N);
         
         double xtemp = a * i - bb / 2.;
@@ -3665,7 +3700,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
         temp.set(2, 1, complex<double>(Re[7], Im[7]));
         temp.set(2, 2, complex<double>(Re[8], Im[8]));
 
-        double bb = param->getb();
+        //double bb = param->getb();
         a = L/static_cast<double>(N);
 
         double xtemp = a * i + bb / 2.;
@@ -3729,7 +3764,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
         double re,im;
         re = 0.;
         im = 0.;
-                  
+        
         while( InStream.read(reinterpret_cast<char*>(&ValueBuffer), sizeof(double)))
         {
             if(INPUT_CTR%2==0)              //this is the real part
@@ -3747,7 +3782,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                 int iy = PositionIndx / N;
                 int ixIn = PositionIndx - N*iy;
 
-                double bb = param->getb();
+                //double bb = param->getb();
                 a = L/static_cast<double>(N);
               
                 double xtemp = a * ixIn - bb / 2.;
@@ -3834,7 +3869,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                   int iy = PositionIndx / N;
                   int ixIn = PositionIndx - N*iy;
                           
-                  double bb = param->getb();
+                  //double bb = param->getb();
                   a = L/static_cast<double>(N);
                   
                   double xtemp = a * ixIn + bb / 2.;
