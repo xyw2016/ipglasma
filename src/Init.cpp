@@ -3555,7 +3555,6 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
     messager.flush("info");
     exit(1);
   }
-    
   stringstream strVOne_name;
   // strVOne_name << "V1-" << param->getMPIRank() << ".txt";
   strVOne_name << "V-"
@@ -3578,39 +3577,26 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
   
   messager << "Reading Wilson lines from files " << VOne_name << " and " << VTwo_name;
   messager.flush("info");
+    
   double bb;
   // read in the shifted impact b in the first stage IP-Glasma
   std::ifstream fin("usedParameters_only_impact_b.dat"); // Open the file for reading
-
-  if (!fin) {
-    std::cerr << "Error opening the file." << std::endl;
-    exit(1); // Exit with an error code
-  }
-
+  // Read data line by line
   std::string line;
   int Npart, Ncoll;
   std::string coupling;
-
-  // Read data line by line
   while (std::getline(fin, line)) {
     // Parse each line to extract the relevant information
     if (line.find("b =") != std::string::npos) {
       // Extract 'b' value
       sscanf(line.c_str(), "b = %lf fm", &bb);
-    } else if (line.find("Npart =") != std::string::npos) {
-      // Extract 'Npart' value
-      sscanf(line.c_str(), "Npart = %d", &Npart);
-    } else if (line.find("Ncoll =") != std::string::npos) {
-      // Extract 'Ncoll' value
-      sscanf(line.c_str(), "Ncoll = %d", &Ncoll);
-    } else if (line.find("using fixed coupling alpha_s=") != std::string::npos) {
-      // Extract 'coupling' value
-      sscanf(line.c_str(), "using fixed coupling alpha_s=%lf", &coupling);
-    }
+    } 
   }
   // Close the file
   fin.close();
-
+  
+  
+  int added_lines = 4;
   if (format == 1)
   {
     int N = param->getSize();
@@ -3702,13 +3688,12 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
 
         //double bb = param->getb();
         a = L/static_cast<double>(N);
-
         double xtemp = a * i + bb / 2.;
         int ix = xtemp / a;
 
         if (ix>=N)
           continue;
-
+        
         int pos = ix * N + j;
         lat->cells[pos]->setU2(temp);
       }
@@ -3723,7 +3708,12 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
     InStream.precision(15);
     InStream.open(VOne_name.c_str(), std::ios::in | std::ios::binary);
     int N;
-    int Nc=param->getNc();
+    int Nc = param->getNc();
+    const int N_one = param->getSize();
+   const int Nc_one = param->getNc();
+   double temp_matix_V2_imag[N_one][Nc_one][Nc_one];
+   double temp_matix_V2_real[N_one][Nc_one][Nc_one];
+   const Matrix one(Nc_one, 1.);
     double L, a, temp;
 
     Matrix tempM(Nc, 1.);
@@ -3743,7 +3733,8 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
         InStream.read(reinterpret_cast<char*>(&L), sizeof(double));
         InStream.read(reinterpret_cast<char*>(&a), sizeof(double));
         InStream.read(reinterpret_cast<char*>(&temp), sizeof(double));
-                                    
+        L = L + L/N * added_lines * 1.0;
+        N = N + added_lines;
         if(N != param->getSize())
         {
           messager << "# ERROR wrong lattice size, data is " << N
@@ -3757,14 +3748,17 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
          exit(0);
       }
 
-                 
+      
         // READING ACTUAL DATA
         double ValueBuffer;
         int INPUT_CTR=0;
         double re,im;
         re = 0.;
         im = 0.;
-        
+
+        int new_xcut = added_lines/2;
+        int new_cut = N*(new_xcut);
+                
         while( InStream.read(reinterpret_cast<char*>(&ValueBuffer), sizeof(double)))
         {
             if(INPUT_CTR%2==0)              //this is the real part
@@ -3773,6 +3767,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
             }
             else                            // this is the imaginary part, write then to variable //
             {
+                
                 im=ValueBuffer;
                           
                 int TEMPINDX=((INPUT_CTR-1)/2);
@@ -3787,16 +3782,15 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
               
                 double xtemp = a * ixIn - bb / 2.;
 
-                int ix = round(xtemp / a);
-
-                // cout << ixIn << " " << ix << endl;
+                int ix = round(xtemp / a) + new_xcut;
+                //ix_temp = ix;
                 
                 int MatrixIndx=TEMPINDX - PositionIndx*9;
                 int j=MatrixIndx/3;
                 int k=MatrixIndx-j*3;
 
-                int indx = N*ix + iy;
-                if (indx >= N*N || indx < 0)
+                int indx = N*ix + iy + new_xcut;
+                if (indx >= N*N + new_xcut || indx < 2*new_xcut)
               {
                 if (bb==0){
                   messager << "Warning: datafile " << VOne_name << " has an element " << indx << " (iy=" << iy << ", ix=" << ix << "), but the grid is N="<< N << ". Element is (" << re <<" + " << im << "i), skipping it";
@@ -3807,13 +3801,27 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                 
               }
                 lat->cells[indx]->getU().set(j,k, complex<double> (re,im));
+                //add the vacuum values. Wenbin
+                int input_N = N - added_lines - 1;
+                if (ixIn==input_N && j==2 && k==2) { //add vacuum values by hand Wenbin
+                    //for (int addy = 0; addy <3; addy++) {
+                        for (int addx = 1; addx <(added_lines +1); addx++) {
+                            int addindx = N*(addx+ix) + iy;
+                            for (int addi = 0; addi < 3; addi++) {
+                                for (int addj = 0; addj < 3; addj++) {
+                                    //lat->cells[addindx]->getU().set(addi,addj, complex<double> (1.0, 0.0));
+                                    INPUT_CTR = INPUT_CTR+2;
+                                }
+                            }
+                        }
+                    //}
+                }
 
             }
             INPUT_CTR++;
         }
-   
       InStream.close();
-      
+
       std::ifstream InStream2;
       InStream2.precision(15);
       InStream2.open(VTwo_name.c_str(), std::ios::in | std::ios::binary);
@@ -3834,7 +3842,8 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
           InStream2.read(reinterpret_cast<char*>(&a), sizeof(double));
           InStream2.read(reinterpret_cast<char*>(&temp), sizeof(double));
                     
-                   
+          L = L + L/N * added_lines * 1.0;
+          N = N + added_lines;
           if(N != param->getSize())
           {
             messager << "# ERROR wrong lattice size, data is " << N
@@ -3870,22 +3879,18 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                   int ixIn = PositionIndx - N*iy;
                           
                   //double bb = param->getb();
-                  a = L/static_cast<double>(N);
+                  a = L/static_cast<double>(N-added_lines);
                   
                   double xtemp = a * ixIn + bb / 2.;
                   
-                  int ix = round(xtemp / a);
-
-                  //                  if (ixIn != ix)
-                  //  cout << ixIn << " " << ix << endl;
-            
+                  int ix = round(xtemp / a) + new_xcut;
                   int MatrixIndx=TEMPINDX - PositionIndx*9;
                   int j=MatrixIndx/3;
                   int k=MatrixIndx-j*3;
                        
-                  int indx = N*ix + iy;
+                  int indx = N*ix + iy + new_xcut ;
                   
-                  if (indx >= N*N || indx < 0)
+                  if (indx >= N*N + new_xcut|| indx < new_cut + new_xcut)
                   {
                     if (bb==0){
                       messager << "Warning: datafile " << VTwo_name << " has an element " << indx << " (iy=" << iy << ", ix=" << ix << "), but the grid is N="<< N << ". Element is (" << re <<" + " << im << "i), skipping it";
@@ -3895,6 +3900,31 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                     continue;
                   }          
                   lat->cells[indx]->getU2().set(j,k, complex<double> (re,im));
+                int input_N = N - added_lines - 1;
+                if (ix==(input_N+new_xcut)) {
+                    temp_matix_V2_real[iy][j][k] = re;
+                    temp_matix_V2_imag[iy][j][k] = im;
+                }
+                if (ix==(input_N+new_xcut) && j==2 && k==2) { //add vacuum values by hand Wenbin
+                    int indx_temp = N*(ix+1) + iy + new_xcut;
+                    for (int addi = 0; addi < 3; addi++) {
+                        for (int addj = 0; addj < 3; addj++) {
+                            lat->cells[indx_temp]->getU2().set(addi,addj, complex<double> (temp_matix_V2_real[iy][addi][addj],temp_matix_V2_imag[iy][addi][addj]));
+                            INPUT_CTR = INPUT_CTR+2;
+                        }
+                    }
+                    //for (int addy = 0; addy <3; addy++) {
+                        for (int addx = 2; addx <(added_lines +1); addx++) {
+                            int addindx = N*(addx+ix) + iy;
+                            for (int addi = 0; addi < 3; addi++) {
+                                for (int addj = 0; addj < 3; addj++) {
+                                    INPUT_CTR = INPUT_CTR+2;
+                                }
+                            }
+                        }
+                    //}
+                }
+                
                // if (indx > 65000) cout << "Save ok" << endl;
 
               }
@@ -3905,7 +3935,59 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
     }
       
   }
+  /*
+  // output the Wilson after reading and shifting impact parameter  Wenbin
+  int N = param->getSize();
+  //N = N + added_lines;
+  const int Ny = param->getNy();
+  const int Nc = param->getNc();
+  // if (param->getWriteInitialWilsonLines() == 1) {
+  stringstream strVOne_names;
+    // strVOne_names << "V1-" << param->getMPIRank() << ".txt";
+    strVOne_names << "V_second_1.txt";
+    string VOne_names;
+    VOne_names = strVOne_names.str();
 
+    stringstream strVTwo_names;
+    // strVTwo_names << "V2-" << param->getMPIRank() << ".txt";
+    strVTwo_names << "V_second_2.txt";
+    //if (param->getWriteInitialWilsonLines() == 1)
+    //  strVTwo_names << ".txt";
+    string VTwo_names;
+    VTwo_names = strVTwo_names.str();
+
+      ofstream foutU(VOne_names.c_str(), ios::out);
+      foutU.precision(15);
+
+      for (int ix = 0; ix < N; ix++) {
+        for (int iy = 0; iy < N; iy++) // loop over all positions
+        {
+          int pos = ix * N + iy;
+          foutU << ix << " " << iy << " "
+                << (lat->cells[pos]->getU()).MatrixToString() << endl;
+        }
+        foutU << endl;
+      }
+      foutU.close();
+
+      cout << "wrote " << strVOne_names.str() << endl;
+
+      ofstream foutU2(VTwo_names.c_str(), ios::out);
+      foutU2.precision(15);
+      for (int ix = 0; ix < N; ix++) {
+        for (int iy = 0; iy < N; iy++) // loop over all positions
+        {
+          int pos = ix * N + iy;
+          foutU2 << ix << " " << iy << " "
+                 << (lat->cells[pos]->getU2()).MatrixToString() << endl;
+        }
+        foutU2 << endl;
+      }
+      foutU2.close();
+
+      cout << "wrote " << strVTwo_names.str() << endl;
+  //} // end output in text
+  */
   messager << " Wilson lines V_A and V_B set on rank " << param->getMPIRank()
            << ". ";
   messager.flush("info");
