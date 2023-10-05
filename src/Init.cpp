@@ -1402,7 +1402,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
   int Ncoll = 0;
   double g2mu2A, g2mu2B;
   double b = param->getb();
-  if (param->runTwoStage()) b = 0.;
+  if (param->runTwoStage()) b = -1.*b; // boosted back
   double r;
   double L = param->getL();
   double P, m;
