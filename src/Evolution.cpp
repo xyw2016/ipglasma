@@ -931,7 +931,6 @@ void Evolution::Tmunu(Lattice *lat, Parameters *param, int it) {
       //   lat->cells[pos]->setEpsilon(0.);
       // else
       lat->cells[pos]->setEpsilon(lat->cells[pos]->getTtautau() * 1 / pow(a, 4.));
-                                    pow(a, 4.));
 
       lat->cells[pos]->setTtautau(lat->cells[pos]->getTtautau() * 1 /
                                   pow(a, 4.));

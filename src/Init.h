@@ -46,7 +46,9 @@ private:
   std::vector<ReturnValue> nucleusA_;
   // list of x and y coordinates of nucleons in nucleus B
   std::vector<ReturnValue> nucleusB_;
-
+  std::vector<double> ran_record_;
+  double ran_record2_[10000] = {0.0};
+  int ran_count_ = 0;
   pretty_ostream messager;
 
 public:

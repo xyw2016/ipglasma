@@ -1749,6 +1749,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
       double p;
       double G = 0.92;
       double ran;
+      int ireco = 0;
       std::vector<double> ran_record;
       for (int i = 0; i < A1; i++) {
         for (int j = 0; j < A2; j++) {
@@ -1759,6 +1760,8 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
           p = G * exp(-G * dij / d2); // Gaussian profile
 
           ran = random->genrand64_real1();
+          if (param->runTwoStage()) ran = ran_record_[ireco];
+          ireco = ireco + 1;
           ran_record.push_back(ran);
           if (ran < p) {
             foutNcoll << (nucleusB_.at(j).x + nucleusA_.at(i).x) / 2. << " "
@@ -1812,6 +1815,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
               break;
           }
       }
+      /*
       for (int iB = 0; iB < 2001; iB++) {
           double xb_temp = random->genrand64_real1(); // uniformly distributed random variable
           //double Bmag = sqrt((Bmax * Bmax - Bmin * Bmin) * xb_temp + Bmin * Bmin);
@@ -1858,9 +1862,10 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
               break;
           }
       }
+      */
       outputFile << BmagAB << "\n";
-      outputFile << BmagAA << "\n";
-      outputFile << BmagBB << "\n";
+      //outputFile << BmagAA << "\n";
+      //outputFile << BmagBB << "\n";
       outputFile.close(); 
       // End of output 
     }
@@ -2324,7 +2329,7 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
     A1 = param->getA1FromFile();
     A2 = param->getA2FromFile();
   }
-
+  ran_record_.clear();
   int Npart = 0;
   int Ncoll = 0;
   double g2mu2A, g2mu2B;
@@ -2675,7 +2680,6 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
       double p;
       double G = 0.92;
       double ran;
-      std::vector<double> ran_record;
       for (int i = 0; i < A1; i++) {
         for (int j = 0; j < A2; j++) {
           dx = nucleusB_.at(j).x - nucleusA_.at(i).x;
@@ -2685,7 +2689,7 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
           p = G * exp(-G * dij / d2); // Gaussian profile
 
           ran = random->genrand64_real1();
-          ran_record.push_back(ran);
+          ran_record_.push_back(ran);
           if (ran < p) {
             foutNcoll << (nucleusB_.at(j).x + nucleusA_.at(i).x) / 2. << " "
                       << (nucleusB_.at(j).y + nucleusA_.at(i).y) / 2. << endl;
@@ -2696,98 +2700,6 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
         }
       }
 
-      // Output the position of each nucleons
-      std::ofstream position_A("position_A.dat"); 
-      for (int i = 0; i < A1; i++) {
-          position_A << nucleusA_.at(i).x << "  " << nucleusA_.at(i).y << "  " << nucleusA_.at(i).z << "\n";
-      }
-      position_A.close(); 
-      
-      std::ofstream position_B("position_B.dat"); 
-      for (int i = 0; i < A1; i++) {
-          position_B << nucleusB_.at(i).x << "  " << nucleusB_.at(i).y << "  " << nucleusB_.at(i).z << "\n";
-      }
-      position_B.close(); 
-
-      // Output the Ncoll with different impact parameters, Bmag
-      double Bmin = 5.0;   // fm
-      double Bmax = 30.0; // fm
-      double dB = (Bmax - Bmin) / 2000;
-      double BmagAB, BmagAA, BmagBB;
-      std::ofstream outputFile("B_Ncoll.dat"); // Open the output file
-      for (int iB = 0; iB < 2001; iB++) {
-          double xb_temp = random->genrand64_real1(); // uniformly distributed random variable
-          //double Bmag = sqrt((Bmax * Bmax - Bmin * Bmin) * xb_temp + Bmin * Bmin);
-          double Bmag = Bmin + dB * iB * 1.;
-          int iran = 0;
-          int Ncoll_Bmag = 0;
-          for (int i = 0; i < A1; i++) {
-            for (int j = 0; j < A2; j++) {
-              dx = nucleusB_.at(j).x - nucleusA_.at(i).x + Bmag;
-              dy = nucleusB_.at(j).y - nucleusA_.at(i).y;
-              dij = dx * dx + dy * dy;
-              p = G * exp(-G * dij / d2); // Gaussian profile
-              if (ran_record[iran] < p) {
-                Ncoll_Bmag++;
-              }
-              iran++;
-            }
-          }
-          if (Ncoll_Bmag == 0) {
-              BmagAB = Bmag;
-              break;
-          }
-      }
-      for (int iB = 0; iB < 2001; iB++) {
-          double xb_temp = random->genrand64_real1(); // uniformly distributed random variable
-          //double Bmag = sqrt((Bmax * Bmax - Bmin * Bmin) * xb_temp + Bmin * Bmin);
-          double Bmag = Bmin + dB * iB * 1.;
-          int iran = 0;
-          int Ncoll_Bmag = 0;
-          for (int i = 0; i < A1; i++) {
-            for (int j = 0; j < A1; j++) {
-              dx = nucleusA_.at(j).x - nucleusA_.at(i).x + Bmag;
-              dy = nucleusA_.at(j).y - nucleusA_.at(i).y;
-              dij = dx * dx + dy * dy;
-              p = G * exp(-G * dij / d2); // Gaussian profile
-              if (ran_record[iran] < p) {
-                Ncoll_Bmag++;
-              }
-              iran++;
-            }
-          }
-          if (Ncoll_Bmag == 0) {
-              BmagAA = Bmag;
-              break;
-          }
-      }
-      for (int iB = 0; iB < 2001; iB++) {
-          double xb_temp = random->genrand64_real1(); // uniformly distributed random variable
-          //double Bmag = sqrt((Bmax * Bmax - Bmin * Bmin) * xb_temp + Bmin * Bmin);
-          double Bmag = Bmin + dB * iB * 1.;
-          int iran = 0;
-          int Ncoll_Bmag = 0;
-          for (int i = 0; i < A2; i++) {
-            for (int j = 0; j < A2; j++) {
-              dx = nucleusB_.at(j).x - nucleusB_.at(i).x + Bmag;
-              dy = nucleusB_.at(j).y - nucleusB_.at(i).y;
-              dij = dx * dx + dy * dy;
-              p = G * exp(-G * dij / d2); // Gaussian profile
-              if (ran_record[iran] < p) {
-                Ncoll_Bmag++;
-              }
-              iran++;
-            }
-          }
-          if (Ncoll_Bmag == 0) {
-              BmagBB = Bmag;
-              break;
-          }
-      }
-      outputFile << BmagAB << "\n";
-      outputFile << BmagAA << "\n";
-      outputFile << BmagBB << "\n";
-      outputFile.close(); 
       // End of output 
     }
 
