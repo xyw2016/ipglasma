@@ -3110,8 +3110,8 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
       ofstream fout1(up_name.c_str(), ios::out);
       fout1 << " " << endl;
       fout1 << "b = " << b << " fm" << endl;
-      fout1 << "Npart = " << Npart << endl;
-      fout1 << "Ncoll = " << Ncoll << endl;
+      fout1 << "A1 = " << A1 << endl;
+      fout1 << "A2 = " << A2 << endl;
       if (param->getRunningCoupling()) {
         if (param->getRunWithQs() == 2)
           fout1 << "<Q_s>(max) = " << param->getAverageQs() << endl;
@@ -3490,7 +3490,7 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
   messager << "Reading Wilson lines from files " << VOne_name << " and " << VTwo_name;
   messager.flush("info");
     
-  double bb;
+  double bb; int AA1, AA2;
   // read in the shifted impact b in the first stage IP-Glasma
   std::ifstream fin("usedParameters_only_impact_b.dat"); // Open the file for reading
   // Read data line by line
@@ -3502,7 +3502,15 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
     if (line.find("b =") != std::string::npos) {
       // Extract 'b' value
       sscanf(line.c_str(), "b = %lf fm", &bb);
-    } 
+    }
+    if (line.find("A1 =") != std::string::npos) {
+      // Extract 'A1' value
+      sscanf(line.c_str(), "A1 = %d", &AA1);
+    }
+    if (line.find("A2 =") != std::string::npos) {
+      // Extract 'A2' value
+      sscanf(line.c_str(), "A2 = %d", &AA2);
+    }
   }
   // Close the file
   fin.close();
@@ -3556,8 +3564,13 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
 
         //double bb = param->getb();
         a = L/static_cast<double>(N);
-        
         double xtemp = a * i - bb / 2.;
+        if (AA1 < 4 && AA2 > 1) {
+            xtemp = a * i - 0.0 / 2.;
+        } else if (AA2 < 4 && AA1 > 1) {
+            xtemp = a * i - bb;
+        }
+        
         int ix = xtemp / a;
 
         if (ix<0)
@@ -3601,6 +3614,12 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
         //double bb = param->getb();
         a = L/static_cast<double>(N);
         double xtemp = a * i + bb / 2.;
+        
+        if (AA1 < 4 && AA2 > 1) {
+            xtemp = a * i + bb;
+        } else if (AA2 < 4 && AA1 > 1) {
+            xtemp = a * i;
+        }
         int ix = xtemp / a;
 
         if (ix>=N)
@@ -3693,6 +3712,13 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                 a = L/static_cast<double>(N);
               
                 double xtemp = a * ixIn - bb / 2.;
+                
+                if (AA1 < 4 && AA2 > 1) {
+                    xtemp = a * ixIn;
+                } else if (AA2 < 4 && AA1 > 1) {
+                    xtemp = a * ixIn - bb;
+                }
+        
 
                 int ix = round(xtemp / a) + new_xcut;
                 //ix_temp = ix;
@@ -3794,7 +3820,12 @@ void Init::readV(Lattice *lat, Parameters *param, int format) {
                   a = L/static_cast<double>(N-added_lines);
                   
                   double xtemp = a * ixIn + bb / 2.;
-                  
+                  if (AA1 < 4 && AA2 > 1) {
+                      xtemp = a * ixIn + bb;
+                  } else if (AA2 < 4 && AA1 > 1) {
+                      xtemp = a * ixIn;
+                  }
+        
                   int ix = round(xtemp / a) + new_xcut;
                   int MatrixIndx=TEMPINDX - PositionIndx*9;
                   int j=MatrixIndx/3;
