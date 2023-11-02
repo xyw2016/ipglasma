@@ -1568,7 +1568,67 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
     sampleQsNormalization(random, param, Npartons, gauss_array);
     gauss2.push_back(gauss_array);
   }
-
+  
+  // use the previous arrays if runTwoStage
+  if (param->runTwoStage()) {
+      xq1.clear(); xq2.clear(); yq1.clear(); yq2.clear();
+      BGq1.clear(); BGq2.clear(); gauss1.clear(); gauss2.clear();
+      vector<double> temp_array;
+      for (int i = 0; i < A1; i++) {
+          temp_array.resize(xq1_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < xq1_[i].size(); iq++) {
+              temp_array[iq] = xq1_[i][iq];
+          }
+          xq1.push_back(temp_array);
+          
+          temp_array.resize(yq1_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < yq1_[i].size(); iq++) {
+              temp_array[iq] = yq1_[i][iq];
+          }
+          yq1.push_back(temp_array);
+          
+          temp_array.resize(BGq1_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < BGq1_[i].size(); iq++) {
+              temp_array[iq] = BGq1_[i][iq];
+          }
+          BGq1.push_back(temp_array);
+          
+          temp_array.resize(gauss1_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < gauss1_[i].size(); iq++) {
+              temp_array[iq] = gauss1_[i][iq];
+          }
+          gauss1.push_back(temp_array);
+      }
+      
+      for (int i = 0; i < A2; i++) {
+          temp_array.resize(xq2_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < xq2_[i].size(); iq++) {
+              temp_array[iq] = xq2_[i][iq];
+          }
+          xq2.push_back(temp_array);
+          
+          temp_array.resize(yq2_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < yq2_[i].size(); iq++) {
+              temp_array[iq] = yq2_[i][iq];
+          }
+          yq2.push_back(temp_array);
+          
+          temp_array.resize(BGq2_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < BGq2_[i].size(); iq++) {
+              temp_array[iq] = BGq2_[i][iq];
+          }
+          BGq2.push_back(temp_array);
+          
+          temp_array.resize(gauss2_[i].size(), 0.);
+          for (unsigned int iq = 0; iq < gauss2_[i].size(); iq++) {
+              temp_array[iq] = gauss2_[i][iq];
+          }
+          gauss2.push_back(temp_array);
+      }
+      
+      
+  }
+  
   // test what a smmoth Woods-Saxon would give
   if (param->getUseSmoothNucleus() == 1) {
     cout << "Using smooth nucleus for test purposes. Does not include "
@@ -2465,7 +2525,9 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
   }
 
   const int NqFlag = param->getUseConstituentQuarkProton();
-  vector< vector<double> > xq1, xq2, yq1, yq2, BGq1, BGq2, gauss1, gauss2;
+  //vector< vector<double> > xq1, xq2, yq1, yq2, BGq1, BGq2, gauss1, gauss2;
+  xq1_.clear(); xq2_.clear(); yq1_.clear(); yq2_.clear(); 
+  BGq1_.clear(); BGq2_.clear(); gauss1_.clear(); gauss2_.clear();
   vector<double> x_array, y_array, z_array, BGq_array, gauss_array;
 
   for (int i = 0; i < A1; i++) {
@@ -2477,13 +2539,13 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
       // Move center of mass to the origin
       // Note that 1607.01711 this is not done, so parameters quoted in
       // that paper can't be used if this is done
-      xq1.push_back(x_array);
-      yq1.push_back(y_array);
-      BGq1.push_back(BGq_array);
+      xq1_.push_back(x_array);
+      yq1_.push_back(y_array);
+      BGq1_.push_back(BGq_array);
     }
     int Npartons = std::max(1, static_cast<int>(x_array.size()));
     sampleQsNormalization(random, param, Npartons, gauss_array);
-    gauss1.push_back(gauss_array);
+    gauss1_.push_back(gauss_array);
   }
 
   for (int i = 0; i < A2; i++) {
@@ -2491,13 +2553,13 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
     if (NqFlag > 0) {
       samplePartonPositions(param, random, x_array, y_array, z_array,
                             BGq_array);
-      xq2.push_back(x_array);
-      yq2.push_back(y_array);
-      BGq2.push_back(BGq_array);
+      xq2_.push_back(x_array);
+      yq2_.push_back(y_array);
+      BGq2_.push_back(BGq_array);
     }
     int Npartons = std::max(1, static_cast<int>(x_array.size()));
     sampleQsNormalization(random, param, Npartons, gauss_array);
-    gauss2.push_back(gauss_array);
+    gauss2_.push_back(gauss_array);
   }
 
   // test what a smmoth Woods-Saxon would give
@@ -2592,14 +2654,14 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
 
             if (param->getUseConstituentQuarkProton() > 0) {
               T = 0.;
-              for (unsigned int iq = 0; iq < xq1[i].size(); iq++) {
-                bp2 = (xm + xq1[i][iq] - x) * (xm + xq1[i][iq] - x) +
-                      (ym + yq1[i][iq] - y) * (ym + yq1[i][iq] - y);
+              for (unsigned int iq = 0; iq < xq1_[i].size(); iq++) {
+                bp2 = (xm + xq1_[i][iq] - x) * (xm + xq1_[i][iq] - x) +
+                      (ym + yq1_[i][iq] - y) * (ym + yq1_[i][iq] - y);
                 bp2 /= hbarc * hbarc;
 
-                T += exp(-bp2 / (2. * BGq1[i][iq])) / (2. * M_PI * BGq1[i][iq]) /
-                     (static_cast<double>(xq1[i].size())) *
-                     gauss1[i][iq]; // I removed the 2/3 here to make it a bit
+                T += exp(-bp2 / (2. * BGq1_[i][iq])) / (2. * M_PI * BGq1_[i][iq]) /
+                     (static_cast<double>(xq1_[i].size())) *
+                     gauss1_[i][iq]; // I removed the 2/3 here to make it a bit
                                     // bigger
               }
             } else {
@@ -2610,7 +2672,7 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
                     xi * pow((xm - x) * cos(phi) + (ym - y) * sin(phi), 2.);
               bp2 /= hbarc * hbarc;
               T = sqrt(1 + xi) * exp(-bp2 / (2. * BG)) / (2. * M_PI * BG) *
-                  gauss1[i][0]; // T_p in this cell for the current nucleon
+                  gauss1_[i][0]; // T_p in this cell for the current nucleon
             }
             lat->cells[localpos]->setTpA(lat->cells[localpos]->getTpA() +
                                          T / nucleiInAverage); // add up all T_p
@@ -2624,14 +2686,14 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
 
             if (param->getUseConstituentQuarkProton() > 0) {
               T = 0.;
-              for (unsigned int iq = 0; iq < xq2[i].size(); iq++) {
-                bp2 = (xm + xq2[i][iq] - x) * (xm + xq2[i][iq] - x) +
-                      (ym + yq2[i][iq] - y) * (ym + yq2[i][iq] - y);
+              for (unsigned int iq = 0; iq < xq2_[i].size(); iq++) {
+                bp2 = (xm + xq2_[i][iq] - x) * (xm + xq2_[i][iq] - x) +
+                      (ym + yq2_[i][iq] - y) * (ym + yq2_[i][iq] - y);
                 bp2 /= hbarc * hbarc;
 
-                T += exp(-bp2 / (2. * BGq2[i][iq])) / (2. * M_PI * BGq2[i][iq]) /
-                     (static_cast<double>(xq2[i].size())) *
-                     gauss2[i][iq];
+                T += exp(-bp2 / (2. * BGq2_[i][iq])) / (2. * M_PI * BGq2_[i][iq]) /
+                     (static_cast<double>(xq2_[i].size())) *
+                     gauss2_[i][iq];
               }
             } else {
               const double BG = param->getBG();
@@ -2642,7 +2704,7 @@ void Init::Get_shift_impact_b(Lattice *lat, Parameters *param,
               bp2 /= hbarc * hbarc;
 
               T = sqrt(1 + xi) * exp(-bp2 / (2. * BG)) / (2. * M_PI * BG) *
-                  gauss2[i][0]; // T_p in this cell for the current nucleon
+                  gauss2_[i][0]; // T_p in this cell for the current nucleon
             }
 
             lat->cells[localpos]->setTpB(lat->cells[localpos]->getTpB() +
