@@ -1841,7 +1841,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
       position_A.close(); 
       
       std::ofstream position_B("position_B.dat"); 
-      for (int i = 0; i < A1; i++) {
+      for (int i = 0; i < A2; i++) {
           position_B << nucleusB_.at(i).x << "  " << nucleusB_.at(i).y << "  " << nucleusB_.at(i).z << "\n";
       }
       position_B.close(); 
