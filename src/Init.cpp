@@ -1412,7 +1412,7 @@ void Init::setColorChargeDensity(Lattice *lat, Parameters *param,
             check = 2;
           }
         }
-
+        if (param->runTwoStage()) check = 2; // Output the whole Wilson line
         double exponent = 5.6; // see 1212.2974 Eq. (17)
         if (check == 2) {
           if (param->getUseFluctuatingx() == 1) {
