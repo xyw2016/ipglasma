@@ -79,5 +79,7 @@ WhichStage 1
 writeOutputsToHDF5  0
 force_dmin_flag  0
 d_min  0.9
+jz_d -1
+DoPol 0
 DO_UPC_DIFF  1
 DO_SOFT_RAD  0
