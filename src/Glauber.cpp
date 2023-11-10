@@ -1260,7 +1260,6 @@ void Glauber::generate_2D_dis_plo_pm1(double total_Vr_, std::vector<PointProbabi
                                       const std::vector<double>& rVr_r_, const std::vector<double>& rVr_pro_) {
     const double dcostheta = 1./100.;
     double rstep = rVr_r_[rVr_r_.size() - 1] / total_Vr_;
-    //cout << rstep << "  " << total_Vr_ << endl;
     for (int icostheta=0; icostheta < 200.; icostheta++) {
         double costheta = icostheta * 1. * dcostheta -1.;
         double theta  = acos(costheta);
@@ -1296,8 +1295,9 @@ std::vector<PointProbability> Glauber::generate2DCDF(const std::vector<PointProb
 std::pair<double, double> Glauber::sampleFrom2DCDF(Random *random, const std::vector<PointProbability>& cdf) {
 
     // Find the point corresponding to the generated probability
+    double random_temp = random->genrand64_real1();
     for (const auto& point : cdf) {
-        if (random->genrand64_real1() < point.prob) {
+        if ( random_temp < point.prob) {
             return {point.rmag, point.theta};
         }
     }
