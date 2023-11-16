@@ -507,8 +507,8 @@ int readInput(Setup *setup, Parameters *param, int argc, char *argv[],
   param->setg2mu(setup->DFind(file_name, "g2mu"));
   param->setMaxtime(setup->DFind(file_name, "maxtime"));
   double lattice_a = param->getL()/static_cast<double>(param->getSize());
-  //param->setdtau(setup->DFind(file_name, "dtau"));
-  double dtau = param->getMaxtime()/100./lattice_a;
+  param->setdtau(setup->DFind(file_name, "dtau"));
+  //double dtau = param->getMaxtime()/100./lattice_a;
   param->setdtau(dtau);
   // param->setxExponent(setup->DFind(file_name,"xExponent")); //  is now
   // obsolete
